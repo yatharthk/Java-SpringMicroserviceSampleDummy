@@ -1,0 +1,27 @@
+Adding Configuration and Security
+1. Consider our ms wants to use configuration : say a db url . we can create a configmap in kubernetes
+and can use that in our app
+    1. create a config map
+        - kubectl create configmap hello-world-config --from-literal=RDS_DB_NAME(key)=todos(value)
+    2.
+       2.1 see all the config maps using
+        - kubectl get configmap
+       2.2 see the values in a specific configmap
+        - kubectl get configmap hello-world-config
+
+2. Add passwords to our ms:
+        Kubernetes Secrets are used to store sensitive data,
+        such as passwords, API keys, or certificates, and provide a secure way to access them
+        within a pod or deployment.
+
+1. creating a secret in kubernetes : also known as secretsMap
+        basic syntax: kubectl create secret <secret-type> <secret-name>
+
+        -  kubectl create secret generic hello-world-web-app-secret1 --from-literal=RDS_PASSWORD=dummyPassword
+
+2. see what details were entered:
+
+        - kubectl describe secret hello-world-app-secret1
+
+        we will not get the password we will just be able to see key used and value size what is entered ,
+        since it is a secret we will not be able to get that value fom here.

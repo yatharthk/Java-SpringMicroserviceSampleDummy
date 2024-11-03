@@ -1,0 +1,98 @@
+Select any cloud platform:AWS/AZURE/GoogleCloud
+
+Eg: Google Cloud
+1. create a kubernetes cluster with default pool-nodes on gc.
+    1.1 create a new project - add name submit.
+    1.2 Search fo Kubernetes Engine, (before we can use kubernetes we need to enable Kubernetes APIs).
+    1.3 Search for Kubernetes Engine again and then create a cluster
+        (inside clusters tab left panel if it is not visible the first time)
+    1.4 configure standard one add name and proceed with defaults. create.
+
+
+Option1: using commands - Imperative style
+
+2. Login,Create and deploy app inside cluster.
+    2.1 copy your created project name through projects.
+    2.2 Open cloud shell and set the project name ->
+        - gcloud config set project my-kubernetes-project-304910
+    2.3 Connect to the cluster network using 3 dots. in kubernetes-Engine ->clusters tab gives us the link.
+     - gcloud container clusters get-credentials my-cluster --zone us-central1-c --project my-kubernetes-project-304910
+    2.4 Once ready , we can connect and execute commands in shell using kubectl.
+
+3. Deploy and create a service on Kubernetes.
+   3.1 Create deployment and a service in cluster
+                - create deployment <deploymentNameOfYourChoice> --image <dockerImageName>
+
+   3.2 Make it accessible from the kube cluster inside cloud to outside world
+                - kubectl expose deployment <deploymentName> --type=LoadBalancer --port=8080
+
+   3.3 Check if service is up: and we got any external ip assigned to it yet
+                - kubectl get services
+
+   3.4 You can keep it on watch mode until an external ip is assigned
+                - kubectl get services --watch
+        Once assigned copy the external ip (Terminate watch mode using ctrl+C)
+
+   3.5 Check if service is responding using curl
+                - curl externalIp:port(portNumber you gave in step 3.2)/hello-world (for the jar being used).
+
+   3.6 Optional : check for events what is happening with the cluster:
+                - kubectl get events
+
+4. Increase numer of instances of a microservices: Scaling Up and Down
+        optional:
+                - kubectl get deployment to check the current number of deployments and number of pods in it (1/1)
+        4.1 - Scale number of instances in a node:
+            4.1.1 Manual:
+                4.1.1.1  To scale number of instances in a node:
+                    - kubectl scale deployment <deploymentName> --replicas=<number>
+                4.1.1.2 To get pods present in specific deployment
+                    - kubectl get pods
+                4.1.1.3 Scale full node :
+                   - gcloud container clusters resize my-cluster --node-pool default-pool --num-nodes=5 --zone=us-central1-c
+
+            4.1.2: AutoScaling
+                4.1.2.1: Pods in a node: I.E. HORIZONTAL-POD-AUTOSCALING. (1 pod multiple instances within a grp)
+                    -   kubectl autoscale deployment hello-world-rest-api --max=4 --cpu-percent=70
+
+                    -   kubectl get hpa - (another command to get information about Horizontal Pod Autoscaling)
+
+                4.1.2.2: node level autoscaling: I.E. VERTICAL-NODE-AUTOSCALING (stacking one group over other)
+                  -  gcloud container clusters update cluster-name --enable-autoscaling --min-nodes=1 --max-nodes=10
+
+Option 2:   using .yaml file to deploy - Declarative Style
+
+       1. Sample Deployment.yaml file configs:
+           apiVersion: apps/v1
+           kind: Deployment            - this is the what we would define in Imperative style [create deployment <deploymentNameOfYourChoice> --image <dockerImageName>]
+           metadata: ....
+           spec:
+                replicas: 3            - this is same as --replicas option/argument  while scaling the app [- kubectl scale deployment <deploymentName> --replicas=<number>]
+                selector :...
+                template:
+                    metadata: ...
+                    spec:
+                        containers:
+                            - image: hello-world-rest-api:0.0.1-SNAPSHOT
+                                    # this is same as --image option while creating the deployment
+                                    # [- create deployment <deploymentNameOfYourChoice> --image <dockerImageName>] (Imperative style)
+                              name: hello-world-rest-api
+
+        - kubectl apply -f deployment.yaml
+
+       2. Sample Service.yml file
+                            kubectl expose <resource> <options>
+                            eg: kubectl expose deployment <deploymentName> --type=LoadBalancer --port=8080
+          apiVersion: v1
+          kind: Service
+          metadata: ...
+          spec:
+            ports:
+               -port: 8080                This is same as what we define in while exposing service in Imperative style
+                protocol : TCP
+                targetPort: 8080
+            selector:
+                app: hello-world-ret-api
+            sessionAffinity: None
+            type: LoadBalancer           This is the --type we define in while exposing the app to outside world
+
